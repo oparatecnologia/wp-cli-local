@@ -11,22 +11,35 @@
 
 set -euo pipefail
 
-LOCAL_BASE="$HOME/Library/Application Support/Local"
+OS="$(uname -s)"
+if [[ "$OS" == "Darwin" ]]; then
+  LOCAL_BASE="$HOME/Library/Application Support/Local"
+  ARCH="$(uname -m)"
+  if [[ "$ARCH" == "arm64" ]]; then
+    ARCH_DIR="darwin-arm64"
+  else
+    ARCH_DIR="darwin"
+  fi
+elif [[ "$OS" == "Linux" ]]; then
+  LOCAL_BASE="$HOME/.config/Local"
+  ARCH_DIR="linux"
+else
+  echo "Error: Unsupported OS: $OS" >&2
+  exit 1
+fi
+
 SITES_JSON="$LOCAL_BASE/sites.json"
 STATUSES_JSON="$LOCAL_BASE/site-statuses.json"
-ARCH="$(uname -m)"
-
-if [[ "$ARCH" == "arm64" ]]; then
-  ARCH_DIR="darwin-arm64"
-else
-  ARCH_DIR="darwin"
-fi
 
 # Locate WP-CLI phar
 WP_CLI_BIN=$(command -v wp 2>/dev/null || true)
 if [[ -z "$WP_CLI_BIN" ]]; then
-  echo "Error: wp (WP-CLI) not found in PATH." >&2
-  exit 1
+  if [[ -f "/opt/Local/resources/extraResources/bin/wp-cli/wp-cli.phar" ]]; then
+    WP_CLI_BIN="/opt/Local/resources/extraResources/bin/wp-cli/wp-cli.phar"
+  else
+    echo "Error: wp (WP-CLI) not found in PATH or at /opt/Local/resources/extraResources/bin/wp-cli/wp-cli.phar." >&2
+    exit 1
+  fi
 fi
 
 # ── Helpers ──────────────────────────────────────────────────────────
@@ -49,7 +62,8 @@ if os.path.exists(statuses_path):
 for s in sorted(sites.values(), key=lambda x: x['name']):
     status = statuses.get(s['id'], 'unknown')
     marker = '●' if status == 'running' else '○'
-    print(f'  {marker} {s[\"name\"]:20s} {status:10s} {s[\"path\"]}')
+    path = os.path.expanduser(s['path'])
+    print(f'  {marker} {s[\"name\"]:20s} {status:10s} {path}')
 "
 }
 
@@ -68,7 +82,7 @@ with open(sites_path) as f:
 best = None
 best_len = 0
 for s in sites.values():
-    p = s['path'].rstrip('/')
+    p = os.path.expanduser(s['path']).rstrip('/')
     # CWD must equal the site path or be a subdirectory of it
     if cwd == p or cwd.startswith(p + '/'):
         if len(p) > best_len:
@@ -80,7 +94,8 @@ if best is None:
 
 php_ver = best['services']['php']['version']
 mysql_ver = best['services']['mysql']['version']
-print(f\"{best['id']}|{best['name']}|{best['path']}|{php_ver}|{mysql_ver}\")
+site_path = os.path.expanduser(best['path'])
+print(f\"{best['id']}|{best['name']}|{site_path}|{php_ver}|{mysql_ver}\")
 "
 }
 
@@ -98,7 +113,8 @@ for s in sites.values():
     if s['name'] == '$name':
         php_ver = s['services']['php']['version']
         mysql_ver = s['services']['mysql']['version']
-        print(f\"{s['id']}|{s['name']}|{s['path']}|{php_ver}|{mysql_ver}\")
+        site_path = os.path.expanduser(s['path'])
+        print(f\"{s['id']}|{s['name']}|{site_path}|{php_ver}|{mysql_ver}\")
         sys.exit(0)
 
 sys.exit(1)
@@ -197,6 +213,12 @@ if [[ -z "$PHP_BASE" ]]; then
   exit 1
 fi
 PHP_BIN="$PHP_BASE/bin/$ARCH_DIR/bin/php"
+
+# Export shared libraries path for Linux PHP dynamic linker
+PHP_SHARED_LIBS="$PHP_BASE/bin/$ARCH_DIR/shared-libs"
+if [[ -d "$PHP_SHARED_LIBS" ]]; then
+  export LD_LIBRARY_PATH="$PHP_SHARED_LIBS${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+fi
 
 # ── Resolve MySQL binary directory ────────────────────────────────────
 

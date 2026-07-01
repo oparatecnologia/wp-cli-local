@@ -13,15 +13,24 @@
 
 set -euo pipefail
 
-LOCAL_BASE="$HOME/Library/Application Support/Local"
-SITES_JSON="$LOCAL_BASE/sites.json"
-ARCH="$(uname -m)"
-
-if [[ "$ARCH" == "arm64" ]]; then
-  ARCH_DIR="darwin-arm64"
+OS="$(uname -s)"
+if [[ "$OS" == "Darwin" ]]; then
+  LOCAL_BASE="$HOME/Library/Application Support/Local"
+  ARCH="$(uname -m)"
+  if [[ "$ARCH" == "arm64" ]]; then
+    ARCH_DIR="darwin-arm64"
+  else
+    ARCH_DIR="darwin"
+  fi
+elif [[ "$OS" == "Linux" ]]; then
+  LOCAL_BASE="$HOME/.config/Local"
+  ARCH_DIR="linux"
 else
-  ARCH_DIR="darwin"
+  echo "Error: Unsupported OS: $OS" >&2
+  exit 1
 fi
+
+SITES_JSON="$LOCAL_BASE/sites.json"
 
 # ── Helpers ──────────────────────────────────────────────────────────
 
@@ -40,7 +49,8 @@ for s in sorted(sites.values(), key=lambda x: x['name']):
         continue
     php_ver = s['services']['php']['version']
     mysql_ver = s['services']['mysql']['version']
-    print(f\"{s['id']}|{s['name']}|{s['path']}|{php_ver}|{mysql_ver}\")
+    site_path = os.path.expanduser(s['path'])
+    print(f\"{s['id']}|{s['name']}|{site_path}|{php_ver}|{mysql_ver}\")
 
 if filter_name:
     # Check if we found the site
@@ -108,6 +118,13 @@ generate_envrc() {
 
 # PHP binary from Local's lightning-services
 export WP_CLI_PHP="$php_bin"
+
+# Add PHP shared libraries path for Linux if it exists
+_PHP_SHARED_LIBS="\$(dirname "$php_bin")/../shared-libs"
+if [[ -d "\$_PHP_SHARED_LIBS" ]]; then
+  export LD_LIBRARY_PATH="\$_PHP_SHARED_LIBS\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}"
+fi
+unset _PHP_SHARED_LIBS
 
 # Site-specific php.ini (contains MySQL socket path)
 _PHP_INI="$php_ini"

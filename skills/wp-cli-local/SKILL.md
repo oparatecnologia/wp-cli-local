@@ -35,9 +35,11 @@ $WP --list
 
 ## Requirements
 
-- macOS (Apple Silicon or Intel)
-- Local by Flywheel installed with sites in `~/Library/Application Support/Local/sites.json`
-- WP-CLI installed and available in `PATH` (e.g. via `brew install wp-cli`)
+- macOS (Apple Silicon or Intel) or Linux (Ubuntu, Debian, Fedora, etc.)
+- Local by Flywheel installed:
+  - macOS config path: `~/Library/Application Support/Local/sites.json`
+  - Linux config path: `~/.config/Local/sites.json`
+- WP-CLI installed and available in `PATH` (or it will automatically fall back to the bundled WP-CLI phar in `/opt/Local/resources/extraResources/bin/wp-cli/wp-cli.phar` on Linux)
 - The target site **must be running** in Local (the site-specific php.ini only exists at runtime)
 
 ## Common Commands

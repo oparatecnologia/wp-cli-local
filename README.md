@@ -1,10 +1,10 @@
-# wp-cli-local
+# wp-cli-local (Antigravity Edition)
 
-An AI agent skill that runs [WP-CLI](https://wp-cli.org/) commands against [Local](https://localwp.com/) (by Flywheel) sites on macOS.
+An AI agent skill that runs [WP-CLI](https://wp-cli.org/) commands against [Local](https://localwp.com/) (by Flywheel) sites on macOS and Linux.
 
-- **Auto-detects** the Local site from your current directory
+- **Auto-detects** the Local site from your current directory (supporting tilde `~/` path expansions on Linux)
 - Falls back to `--site=<name>` when outside a site folder
-- Uses Local's own PHP and MySQL binaries with the correct `php.ini`
+- Uses Local's own PHP and MySQL binaries with the correct `php.ini` and shared libraries path (`LD_LIBRARY_PATH`)
 
 <div align="center">
 <img width="739" height="656" alt="Screenshot 2026-03-12 at 00 54 40" src="https://github.com/user-attachments/assets/f975a023-9b17-421c-b88a-576f03b4513a" />
@@ -27,21 +27,24 @@ Without `--all`, you'll be prompted to select which agents to install for.
 
 ## Prerequisites
 
-- **macOS** (Apple Silicon or Intel)
+- **macOS** (Apple Silicon or Intel) or **Linux**
 - **[Local](https://localwp.com/)** installed with at least one site
-- **[WP-CLI](https://wp-cli.org/)** installed and in `PATH` (e.g. `brew install wp-cli`)
+- **[WP-CLI](https://wp-cli.org/)** installed and in `PATH` (on Linux, it automatically falls back to Local's bundled WP-CLI phar at `/opt/Local/resources/extraResources/bin/wp-cli/wp-cli.phar` if not in `PATH`)
 - The target site must be **running** in Local
 
 ## How It Works
 
 The wrapper script at `scripts/wp`:
 
-1. Reads `~/Library/Application Support/Local/sites.json` to find all sites
-2. Matches the current working directory against site paths (longest prefix match)
-3. Resolves the correct PHP and MySQL binaries from Local's `lightning-services/`
-4. Loads the site-specific `php.ini` (which contains the MySQL socket path)
-5. Sets `MYSQL_UNIX_PORT` so `wp db` commands use the correct socket
-6. Executes WP-CLI with the correct environment
+1. Reads the Local sites configuration:
+   - macOS: `~/Library/Application Support/Local/sites.json`
+   - Linux: `~/.config/Local/sites.json`
+2. Matches the current working directory against site paths, automatically expanding `~/` prefixes for Linux compatibility.
+3. Resolves the correct PHP and MySQL binaries from Local's `lightning-services/` using the system architecture/OS path (`linux` on Linux, `darwin*` on macOS).
+4. Loads the site-specific `php.ini` (which contains the MySQL socket path).
+5. Sets `MYSQL_UNIX_PORT` so `wp db` commands use the correct socket.
+6. Configures `LD_LIBRARY_PATH` on Linux to include PHP's `shared-libs` directory, preventing dynamic link issues (e.g. missing `libtidy.so.5deb1`).
+7. Executes WP-CLI with the correct environment.
 
 ## Usage
 
@@ -83,6 +86,13 @@ Local by Flywheel sites:
   ● plugins              running    /Users/you/Sites/plugins
   ○ my-site              halted     /Users/you/Sites/my-site
 ```
+
+## Antigravity Edition
+
+This fork is optimized to run as an **Agent Skill** inside the **Antigravity** coding environment on **Linux**. It introduces key fixes for Linux/LocalWP environments:
+- **Tilde Expansion**: Auto-detection resolves Linux `~/Local Sites` paths by properly expanding the home directory in Python helpers.
+- **Dynamic Linker Config**: Resolves PHP core binary shared library dependencies on Linux by dynamically exporting `LD_LIBRARY_PATH` to point to Local's PHP service `shared-libs`.
+- **Bundled WP-CLI Fallback**: Gracefully falls back to `/opt/Local/resources/extraResources/bin/wp-cli/wp-cli.phar` if WP-CLI is not globally installed.
 
 ## Credit
 
