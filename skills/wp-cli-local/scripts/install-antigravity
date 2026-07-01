@@ -1,0 +1,29 @@
+#!/bin/bash
+# Install the wp-cli-local skill globally for Antigravity CLI and GUI
+#
+# Usage:
+#   bash install-antigravity
+
+set -euo pipefail
+
+# Resolve the absolute path of the skill directory (parent of scripts/)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SKILL_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Define Antigravity's global customization root and skills folder
+ANTIGRAVITY_CONFIG_DIR="$HOME/.gemini/config"
+ANTIGRAVITY_SKILLS_DIR="$ANTIGRAVITY_CONFIG_DIR/skills"
+
+echo "Installing wp-cli-local skill for Antigravity..."
+
+# Ensure the config directories exist
+mkdir -p "$ANTIGRAVITY_SKILLS_DIR"
+
+# Create symlink (force to overwrite existing)
+ln -sf "$SKILL_DIR" "$ANTIGRAVITY_SKILLS_DIR/wp-cli-local"
+
+echo ""
+echo "✓ Success! The skill has been linked to:"
+echo "  $ANTIGRAVITY_SKILLS_DIR/wp-cli-local"
+echo ""
+echo "It is now permanently available globally in both Antigravity CLI and GUI."

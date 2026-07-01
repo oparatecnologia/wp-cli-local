@@ -94,6 +94,20 @@ This fork is optimized to run as an **Agent Skill** inside the **Antigravity** c
 - **Dynamic Linker Config**: Resolves PHP core binary shared library dependencies on Linux by dynamically exporting `LD_LIBRARY_PATH` to point to Local's PHP service `shared-libs`.
 - **Bundled WP-CLI Fallback**: Gracefully falls back to `/opt/Local/resources/extraResources/bin/wp-cli/wp-cli.phar` if WP-CLI is not globally installed.
 
+### Installation in Antigravity
+
+To register this skill globally inside your **Antigravity CLI and GUI**, run the provided installation script:
+
+```bash
+# If installed via npx skills:
+bash ~/.agents/skills/wp-cli-local/scripts/install-antigravity
+
+# Or if you cloned this repository locally:
+bash skills/wp-cli-local/scripts/install-antigravity
+```
+
+This script links the skill to Antigravity's global configuration directory (`~/.gemini/config/skills/wp-cli-local`), making it permanently available.
+
 ## Credit
 
 Inspired by [local-wp-cli](https://github.com/aslamdoctor/local-wp-cli) skill, but rewritten from scratch with better site detection and MySQL socket support.
